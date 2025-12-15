@@ -17,7 +17,7 @@ atomic<bool> running(true);
 
 void heartbeatThread(){
 	while(running){
-		sendHeartbeat("A Server", 25565, 0, 1, "gregorywashere", true, "ccraft");
+		sendHeartbeat("A Server", 25565, 0, 1, "gregorywashere", true, "ccraft", true);
 		this_thread::sleep_for(chrono::seconds(60));
 	}
 }
@@ -30,7 +30,6 @@ void connectionThread(int serverSocket){
 			if(running){
 				cerr << "Error accepting connection" << endl;
 			}
-		}
 			continue;
 		}
         
