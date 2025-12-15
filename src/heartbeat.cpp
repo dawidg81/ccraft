@@ -10,7 +10,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 	return size * nmemb;
 }
 
-bool sendHeartbeat(const string& name, int port, int users, int max, const string& salt, bool isPublic) {
+bool sendHeartbeat(const string& name, int port, int users, int max, const string& salt, bool isPublic, const string& software, bool web) {
 	CURL* curl = curl_easy_init();
 	if(!curl) return false;
 
@@ -20,7 +20,9 @@ bool sendHeartbeat(const string& name, int port, int users, int max, const strin
 		"&users=" + to_string(users) + 
 		"&max=" + to_string(max) + 
 		"&salt=" + salt + 
-		"&public=" + (isPublic ? "true" : "false");
+		"&public=" + (isPublic ? "true" : "false") +
+		"&software=" + software +
+		"&web=" + (web ? "true" : "false");
 
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
