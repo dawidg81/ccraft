@@ -10,6 +10,8 @@
 
 #include "heartbeat.hpp"
 #include "handle_new.hpp"
+#include "player_manager.hpp"
+#include "game.hpp"
 
 using namespace std;
 
