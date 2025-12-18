@@ -141,5 +141,8 @@ int main(){
 	hbThread.join();
 	connThread.join();
 
+	delete g_playerManager;
+	close(serverSocket);
+
 	return 0;
 }
