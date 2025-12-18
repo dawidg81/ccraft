@@ -10,6 +10,21 @@
 
 using namespace std;
 
+void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id){
+    uint8_t buffer[8];
+    
+    senderPlayerId = buffer[1];
+    
+}
+
+void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch){
+
+}
+
+void recvMessage(uint8_t senderPlayerId, std::string message){
+
+}
+
 void sendBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id) {
     uint8_t buffer[8];
     buffer[0] = 0x06;

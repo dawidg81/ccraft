@@ -4,6 +4,10 @@
 #include <string>
 #include <cstdint>
 
+void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id);
+void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
+void recvMessage(uint8_t senderPlayerId, std::string message);
+
 void sendBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id);
 void sendAbsolutePosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
 void sendRelativePosOrt(uint8_t playerId, int8_t x, int8_t y, int8_t z, uint8_t yaw, uint8_t pitch);
