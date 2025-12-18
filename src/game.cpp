@@ -87,6 +87,7 @@ void sendSpawnPlayer(uint8_t targetPlayerId, uint8_t newPlayerId, string usernam
     buffer[73] = pitch;
     
     g_playerManager->sendToPlayer(targetPlayerId, buffer, sizeof(buffer));
+    g_playerManager->broadcastToOthers(targetPlayerId, buffer, sizeof(buffer));
 }
 
 void sendDespawnPlayer(uint8_t playerId) {
