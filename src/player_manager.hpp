@@ -40,7 +40,7 @@ class PlayerManager {
 		void sendToPlayer(uint8_t playerId, const uint8_t* data, size_t length);
 		Player* getPlayer(uint8_t playerId);
 		void updatePlayerPosition(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
-}
+};
 
 extern PlayerManager* g_playerManager;
 
