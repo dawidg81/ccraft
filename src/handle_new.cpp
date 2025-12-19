@@ -103,7 +103,6 @@ void sendLevelData(int &clientSocket){
 
 	levelDataPack levelData;
 
-	level_x = 64, level_y = 64, level_z = 64;
 	int total_blocks = level_x * level_y * level_z;
 	uint8_t* level_blocks = new uint8_t[total_blocks];
 
@@ -183,9 +182,9 @@ void sendLevelFinalize(int &clientSocket){
 
 	levelFinalizePack levelFinalize;
 	levelFinalize.packet_id = 0x04;
-	levelFinalize.x = htons(64); // FIX: make it synchronized with sendLevelData's already declared map boundaries
-	levelFinalize.y = htons(64);
-	levelFinalize.z = htons(64);
+	levelFinalize.x = htons(level_x);
+	levelFinalize.y = htons(level_y);
+	levelFinalize.z = htons(level_z);
 
 	memcpy(levelFinalizeBuf, &levelFinalize, sizeof(levelFinalize));
 	send(clientSocket, levelFinalizeBuf, sizeof(levelFinalizeBuf), 0);	
