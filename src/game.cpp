@@ -7,6 +7,7 @@
 
 #include "game.hpp"
 #include "player_manager.hpp"
+#include "level.hpp"
 
 using namespace std;
 
@@ -109,9 +110,9 @@ void recvBlock(uint8_t senderPlayerId,
     Player* p = g_playerManager->getPlayer(senderPlayerId);
     if (!p) return;
 
-    if (x < 0 || x >= 256 ||
-        y < 0 || y >= 64  ||
-        z < 0 || z >= 256)
+    if (x < 0 || x >= level_x ||
+        y < 0 || y >= level_y ||
+        z < 0 || z >= level_z)
     {
         return;
     }

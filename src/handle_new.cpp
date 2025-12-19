@@ -7,6 +7,7 @@
 #include <zlib.h>
 
 #include "handle_new.hpp"
+#include "level.hpp"
 
 using namespace std;
 
@@ -102,7 +103,7 @@ void sendLevelData(int &clientSocket){
 
 	levelDataPack levelData;
 
-	int level_x = 64, level_y = 64, level_z = 64;
+	level_x = 64, level_y = 64, level_z = 64;
 	int total_blocks = level_x * level_y * level_z;
 	uint8_t* level_blocks = new uint8_t[total_blocks];
 
