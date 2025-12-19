@@ -194,3 +194,23 @@ void spawnNewPlayerForOthers(uint8_t newPlayerId)
     }
 }
 
+void handlePositionUpdate(uint8_t playerId, int16_t newX, int16_t newY, int16_t newZ, uint8_t yaw, uint8_t pitch)
+{
+    Player* player = g_playerManager->getPlayer(playerId);
+    if(!player) return;
+
+    int8_t dx = static_cast<int8_t>(newX - player->x);
+    int8_t dy = static_cast<int8_t>(newY - player->y);
+    int8_t dz = static_cast<int8_t>(newZ - player->z);
+
+    // Update server-side position
+    player->x = newX;
+    player->y = newY;
+    player->z = newZ;
+    player->yaw = yaw;
+    player->pitch = pitch;
+
+    // Broadcast relative movement to all others
+    sendRelativePosOrt(playerId, dx, dy, dz, yaw, pitch);
+}
+

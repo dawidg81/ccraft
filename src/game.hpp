@@ -12,6 +12,7 @@ void sendSpawnPlayer(uint8_t targetPlayerId, uint8_t newPlayerId, std::string us
 void sendDespawnPlayer(uint8_t playerId);
 void spawnExistingPlayersFor(uint8_t newPlayerId);
 void spawnNewPlayerForOthers(uint8_t newPlayerId);
+void handlePositionUpdate(uint8_t playerId, int16_t newX, int16_t newY, int16_t newZ, uint8_t yaw, uint8_t pitch);
 
 void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id);
 void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
