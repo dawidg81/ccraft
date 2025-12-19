@@ -73,13 +73,19 @@ void handleNewConnection(int clientSocket){
         close(clientSocket);
         return;
     }
-    
+
     // Set initial spawn position (center of map, 2 blocks above ground level)
     newPlayer->x = 2048;  // 64 * 32 (center of 64-block map)
     newPlayer->y = 2112;  // (32 + 2) * 32 (slightly above ground)
     newPlayer->z = 2048;
     newPlayer->yaw = 0;
     newPlayer->pitch = 0;
+
+    // Self-spawn (player sees themselves)
+    sendSpawnPlayer(playerId, playerId, username,
+                newPlayer->x, newPlayer->y, newPlayer->z,
+                newPlayer->yaw, newPlayer->pitch);
+
     
     // Step 5: Spawn existing players for the new player
     {
