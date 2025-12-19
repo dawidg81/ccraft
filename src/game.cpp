@@ -149,3 +149,48 @@ void recvMessage(uint8_t senderPlayerId, std::string message)
 
     sendMessage(senderPlayerId, message);
 }
+
+void spawnExistingPlayersFor(uint8_t newPlayerId)
+{
+    Player* newPlayer = g_playerManager->getPlayer(newPlayerId);
+    if (!newPlayer) return;
+
+    std::lock_guard<std::mutex> lock(g_playerManager->playersMutex);
+
+    for (auto p : g_playerManager->players)
+    {
+        if (p->active && p->playerId != newPlayerId)
+        {
+            sendSpawnPlayer(
+                newPlayerId,
+                p->playerId,
+                p->username,
+                p->x, p->y, p->z,
+                p->yaw, p->pitch
+            );
+        }
+    }
+}
+
+void spawnNewPlayerForOthers(uint8_t newPlayerId)
+{
+    Player* newPlayer = g_playerManager->getPlayer(newPlayerId);
+    if (!newPlayer) return;
+
+    std::lock_guard<std::mutex> lock(g_playerManager->playersMutex);
+
+    for (auto p : g_playerManager->players)
+    {
+        if (p->active && p->playerId != newPlayerId)
+        {
+            sendSpawnPlayer(
+                p->playerId,
+                newPlayerId,
+                newPlayer->username,
+                newPlayer->x, newPlayer->y, newPlayer->z,
+                newPlayer->yaw, newPlayer->pitch
+            );
+        }
+    }
+}
+

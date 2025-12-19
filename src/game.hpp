@@ -10,6 +10,8 @@ void sendRelativePosOrt(uint8_t playerId, int8_t x, int8_t y, int8_t z, uint8_t 
 void sendMessage(uint8_t senderPlayerId, std::string message);
 void sendSpawnPlayer(uint8_t targetPlayerId, uint8_t newPlayerId, std::string username, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
 void sendDespawnPlayer(uint8_t playerId);
+void spawnExistingPlayersFor(uint8_t newPlayerId);
+void spawnNewPlayerForOthers(uint8_t newPlayerId);
 
 void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id);
 void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
