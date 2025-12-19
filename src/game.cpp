@@ -10,19 +10,8 @@
 
 using namespace std;
 
-void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id){
-    uint8_t buffer[8];
-    
-    senderPlayerId = buffer[1];
-    
-}
-
-void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch){
-
-}
-
-void recvMessage(uint8_t senderPlayerId, std::string message){
-
+inline int16_t readInt16BE(const uint8_t* buf) {
+    return (int16_t)((buf[0] << 8) | buf[1]);
 }
 
 void sendBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id) {
@@ -111,4 +100,43 @@ void sendDespawnPlayer(uint8_t playerId) {
     buffer[1] = playerId;
     
     g_playerManager->broadcastToOthers(playerId, buffer, sizeof(buffer));
+}
+
+void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id){
+    uint8_t buffer[8];
+    
+    senderPlayerId = buffer[1];
+    int16_t x = readInt16BE(&buffer[1]);
+    int16_t y = readInt16BE(&buffer[3]);
+    int16_t z = readInt16BE(&buffer[5]);
+    uint8_t block_id = buffer[7];
+}
+
+void recvPosOrt(uint8_t playerId,
+                int16_t x, int16_t y, int16_t z,
+                uint8_t yaw, uint8_t pitch)
+{
+    Player* p = g_playerManager->getPlayer(playerId);
+    if (!p) return;
+
+    p->x = x;
+    p->y = y;
+    p->z = z;
+    p->yaw = yaw;
+    p->pitch = pitch;
+
+    sendAbsolutePosOrt(playerId, x, y, z, yaw, pitch);
+}
+
+void recvMessage(uint8_t senderPlayerId, std::string message)
+{
+    if (message.empty()) return;
+
+    // TODO: command handling
+    if (!message.empty() && message[0] == '/') {
+        // handleCommand(senderPlayerId, message);
+        return;
+    }
+
+    sendMessage(senderPlayerId, message);
 }
