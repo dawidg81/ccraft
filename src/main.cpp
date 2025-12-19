@@ -24,108 +24,143 @@ void heartbeatThread(){
     }
 }
 
-void handleNewConnection(int clientSocket){
+
+void handleNewConnection(int clientSocket) {
     // Step 1: Receive player identification
     uint8_t playerIdBuf[131];
     ssize_t bytesReceived = recv(clientSocket, playerIdBuf, sizeof(playerIdBuf), 0);
-    
-    if(bytesReceived < 130){
+
+    if (bytesReceived < 130) {
         cout << "Failed to receive player identification (got " << bytesReceived << " bytes)\n";
         close(clientSocket);
         return;
     }
-    
-    // Validate packet
-    if(playerIdBuf[0] != 0x00){
+
+    // Validate packet ID
+    if (playerIdBuf[0] != 0x00) {
         cout << "Invalid packet ID: expected 0x00 but got 0x" << hex << (int)playerIdBuf[0] << dec << "\n";
         close(clientSocket);
         return;
     }
-    
-    if(playerIdBuf[1] != 0x07){
+
+    // Validate protocol version
+    if (playerIdBuf[1] != 0x07) {
         cout << "Invalid protocol version: expected 0x07 but got 0x" << hex << (int)playerIdBuf[1] << dec << "\n";
         close(clientSocket);
         return;
     }
-    
+
     // Extract and trim username
-    string username = string((char*)&playerIdBuf[2], 64);
+    string username((char*)&playerIdBuf[2], 64);
     size_t end = username.find_last_not_of(" ");
-    if(end != string::npos){
-        username = username.substr(0, end + 1);
-    }
-    
+    if (end != string::npos) username = username.substr(0, end + 1);
+
     cout << "New connection fully identified. Welcome " << username << " to the server!\n";
-    
-    // Step 2: Send initial packets
+
+    // Step 2: Send initial server/level packets
     sendServerId(clientSocket, "A Server", "Welcome!");
     sendLevelInit(clientSocket);
     sendLevelData(clientSocket);
     sendLevelFinalize(clientSocket);
-    
-    // Step 3: Add player to manager and get their ID
+
+    // Step 3: Add player to manager
     uint8_t playerId = g_playerManager->addPlayer(clientSocket, username);
-    
-    // Step 4: Get the new player object
-Player* newPlayer = g_playerManager->getPlayer(playerId);
-if(!newPlayer){
-    cout << "Error: Failed to get player after adding\n";
-    close(clientSocket);
-    return;
-}
 
-// Set initial spawn position
-newPlayer->x = 2048;
-newPlayer->y = 2112;
-newPlayer->z = 2048;
-newPlayer->yaw = 0;
-newPlayer->pitch = 0;
+    // Step 4: Get new player object
+    Player* newPlayer = g_playerManager->getPlayer(playerId);
+    if (!newPlayer) {
+        cout << "Error: Failed to get player after adding\n";
+        close(clientSocket);
+        return;
+    }
 
-// Step 5: Send initial teleport to self
-sendAbsolutePosOrt(playerId, newPlayer->x, newPlayer->y, newPlayer->z,
-                   newPlayer->yaw, newPlayer->pitch);
+    // Set initial spawn position
+    newPlayer->x = 2048;
+    newPlayer->y = 2112;
+    newPlayer->z = 2048;
+    newPlayer->yaw = 0;
+    newPlayer->pitch = 0;
 
-// Step 6: Spawn existing players for the new player
-{
-    lock_guard<mutex> lock(g_playerManager->playersMutex);
-    for(auto existingPlayer : g_playerManager->players){
-        if(existingPlayer->playerId != playerId && existingPlayer->active){
-            // Tell new player about existing player
-            sendSpawnPlayer(playerId, existingPlayer->playerId, 
-                            existingPlayer->username,
-                            existingPlayer->x, existingPlayer->y, existingPlayer->z,
-                            existingPlayer->yaw, existingPlayer->pitch);
+    // Step 5: Send initial teleport to self (0x08)
+    {
+        uint8_t buffer[10];
+        buffer[0] = 0x08;
+        buffer[1] = playerId;
+        buffer[2] = (newPlayer->x >> 8) & 0xFF;
+        buffer[3] = newPlayer->x & 0xFF;
+        buffer[4] = (newPlayer->y >> 8) & 0xFF;
+        buffer[5] = newPlayer->y & 0xFF;
+        buffer[6] = (newPlayer->z >> 8) & 0xFF;
+        buffer[7] = newPlayer->z & 0xFF;
+        buffer[8] = newPlayer->yaw;
+        buffer[9] = newPlayer->pitch;
 
-            // Also tell new player the exact position of existing player
-            sendAbsolutePosOrt(existingPlayer->playerId,
-                               existingPlayer->x, existingPlayer->y, existingPlayer->z,
-                               existingPlayer->yaw, existingPlayer->pitch);
+        g_playerManager->sendToPlayer(playerId, buffer, sizeof(buffer));
+    }
+
+    // Step 6: Spawn existing players for the new player
+    {
+        lock_guard<mutex> lock(g_playerManager->playersMutex);
+        for (auto existingPlayer : g_playerManager->players) {
+            if (existingPlayer->playerId != playerId && existingPlayer->active) {
+                // Send spawn packet (0x07) to new player
+                sendSpawnPlayer(playerId, existingPlayer->playerId,
+                                existingPlayer->username,
+                                existingPlayer->x, existingPlayer->y, existingPlayer->z,
+                                existingPlayer->yaw, existingPlayer->pitch);
+
+                // Send exact position/rotation (0x08) to new player
+                uint8_t buffer[10];
+                buffer[0] = 0x08;
+                buffer[1] = existingPlayer->playerId;
+                buffer[2] = (existingPlayer->x >> 8) & 0xFF;
+                buffer[3] = existingPlayer->x & 0xFF;
+                buffer[4] = (existingPlayer->y >> 8) & 0xFF;
+                buffer[5] = existingPlayer->y & 0xFF;
+                buffer[6] = (existingPlayer->z >> 8) & 0xFF;
+                buffer[7] = existingPlayer->z & 0xFF;
+                buffer[8] = existingPlayer->yaw;
+                buffer[9] = existingPlayer->pitch;
+
+                g_playerManager->sendToPlayer(playerId, buffer, sizeof(buffer));
+            }
         }
     }
-}
 
-// Step 7: Spawn new player for all existing players
-{
-    lock_guard<mutex> lock(g_playerManager->playersMutex);
-    for(auto existingPlayer : g_playerManager->players){
-        if(existingPlayer->playerId != playerId && existingPlayer->active){
-            sendSpawnPlayer(existingPlayer->playerId, playerId,
-                            newPlayer->username,
-                            newPlayer->x, newPlayer->y, newPlayer->z,
-                            newPlayer->yaw, newPlayer->pitch);
+    // Step 7: Spawn new player for all existing players
+    {
+        lock_guard<mutex> lock(g_playerManager->playersMutex);
+        for (auto existingPlayer : g_playerManager->players) {
+            if (existingPlayer->playerId != playerId && existingPlayer->active) {
+                // Send spawn packet (0x07) to existing player
+                sendSpawnPlayer(existingPlayer->playerId, playerId,
+                                newPlayer->username,
+                                newPlayer->x, newPlayer->y, newPlayer->z,
+                                newPlayer->yaw, newPlayer->pitch);
 
-            // Also broadcast initial absolute position to all others
-            sendAbsolutePosOrt(playerId,
-                               newPlayer->x, newPlayer->y, newPlayer->z,
-                               newPlayer->yaw, newPlayer->pitch);
+                // Send initial absolute position (0x08) of new player to others
+                uint8_t buffer[10];
+                buffer[0] = 0x08;
+                buffer[1] = playerId;
+                buffer[2] = (newPlayer->x >> 8) & 0xFF;
+                buffer[3] = newPlayer->x & 0xFF;
+                buffer[4] = (newPlayer->y >> 8) & 0xFF;
+                buffer[5] = newPlayer->y & 0xFF;
+                buffer[6] = (newPlayer->z >> 8) & 0xFF;
+                buffer[7] = newPlayer->z & 0xFF;
+                buffer[8] = newPlayer->yaw;
+                buffer[9] = newPlayer->pitch;
+
+                g_playerManager->sendToPlayer(existingPlayer->playerId, buffer, sizeof(buffer));
+            }
         }
     }
-}
 
-    // Step 7: Start game loop in new thread
+    // Step 8: Start game loop in a new thread
     newPlayer->playerThread = thread(playerGameLoop, clientSocket, playerId);
     newPlayer->playerThread.detach();
 }
+
 
 void connectionThread(int serverSocket){
     while(running){
