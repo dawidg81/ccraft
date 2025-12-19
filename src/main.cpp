@@ -67,53 +67,61 @@ void handleNewConnection(int clientSocket){
     uint8_t playerId = g_playerManager->addPlayer(clientSocket, username);
     
     // Step 4: Get the new player object
-    Player* newPlayer = g_playerManager->getPlayer(playerId);
-    if(!newPlayer){
-        cout << "Error: Failed to get player after adding\n";
-        close(clientSocket);
-        return;
-    }
+Player* newPlayer = g_playerManager->getPlayer(playerId);
+if(!newPlayer){
+    cout << "Error: Failed to get player after adding\n";
+    close(clientSocket);
+    return;
+}
 
-    // Set initial spawn position (center of map, 2 blocks above ground level)
-    newPlayer->x = 2048;  // 64 * 32 (center of 64-block map)
-    newPlayer->y = 2112;  // (32 + 2) * 32 (slightly above ground)
-    newPlayer->z = 2048;
-    newPlayer->yaw = 0;
-    newPlayer->pitch = 0;
+// Set initial spawn position
+newPlayer->x = 2048;
+newPlayer->y = 2112;
+newPlayer->z = 2048;
+newPlayer->yaw = 0;
+newPlayer->pitch = 0;
 
-    // Self-spawn (player sees themselves)
-    sendSpawnPlayer(playerId, playerId, username,
-                newPlayer->x, newPlayer->y, newPlayer->z,
-                newPlayer->yaw, newPlayer->pitch);
+// Step 5: Send initial teleport to self
+sendAbsolutePosOrt(playerId, newPlayer->x, newPlayer->y, newPlayer->z,
+                   newPlayer->yaw, newPlayer->pitch);
 
-    
-    // Step 5: Spawn existing players for the new player
-    {
-        lock_guard<mutex> lock(g_playerManager->playersMutex);
-        for(auto existingPlayer : g_playerManager->players){
-            if(existingPlayer->playerId != playerId && existingPlayer->active){
-                // Tell new player about existing player
-                sendSpawnPlayer(playerId, existingPlayer->playerId, 
-                              existingPlayer->username,
-                              existingPlayer->x, existingPlayer->y, existingPlayer->z,
-                              existingPlayer->yaw, existingPlayer->pitch);
-            }
+// Step 6: Spawn existing players for the new player
+{
+    lock_guard<mutex> lock(g_playerManager->playersMutex);
+    for(auto existingPlayer : g_playerManager->players){
+        if(existingPlayer->playerId != playerId && existingPlayer->active){
+            // Tell new player about existing player
+            sendSpawnPlayer(playerId, existingPlayer->playerId, 
+                            existingPlayer->username,
+                            existingPlayer->x, existingPlayer->y, existingPlayer->z,
+                            existingPlayer->yaw, existingPlayer->pitch);
+
+            // Also tell new player the exact position of existing player
+            sendAbsolutePosOrt(existingPlayer->playerId,
+                               existingPlayer->x, existingPlayer->y, existingPlayer->z,
+                               existingPlayer->yaw, existingPlayer->pitch);
         }
     }
-    
-    // Step 6: Spawn new player for all existing players
-    {
-        lock_guard<mutex> lock(g_playerManager->playersMutex);
-        for(auto existingPlayer : g_playerManager->players){
-            if(existingPlayer->playerId != playerId && existingPlayer->active){
-                // Tell existing players about new player
-                sendSpawnPlayer(existingPlayer->playerId, playerId, username,
-                              newPlayer->x, newPlayer->y, newPlayer->z,
-                              newPlayer->yaw, newPlayer->pitch);
-            }
+}
+
+// Step 7: Spawn new player for all existing players
+{
+    lock_guard<mutex> lock(g_playerManager->playersMutex);
+    for(auto existingPlayer : g_playerManager->players){
+        if(existingPlayer->playerId != playerId && existingPlayer->active){
+            sendSpawnPlayer(existingPlayer->playerId, playerId,
+                            newPlayer->username,
+                            newPlayer->x, newPlayer->y, newPlayer->z,
+                            newPlayer->yaw, newPlayer->pitch);
+
+            // Also broadcast initial absolute position to all others
+            sendAbsolutePosOrt(playerId,
+                               newPlayer->x, newPlayer->y, newPlayer->z,
+                               newPlayer->yaw, newPlayer->pitch);
         }
     }
-    
+}
+
     // Step 7: Start game loop in new thread
     newPlayer->playerThread = thread(playerGameLoop, clientSocket, playerId);
     newPlayer->playerThread.detach();
