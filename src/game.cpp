@@ -102,15 +102,23 @@ void sendDespawnPlayer(uint8_t playerId) {
     g_playerManager->broadcastToOthers(playerId, buffer, sizeof(buffer));
 }
 
-void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id){
-    uint8_t buffer[8];
-    
-    senderPlayerId = buffer[1];
-    int16_t x = readInt16BE(&buffer[1]);
-    int16_t y = readInt16BE(&buffer[3]);
-    int16_t z = readInt16BE(&buffer[5]);
-    uint8_t block_id = buffer[7];
+void recvBlock(uint8_t senderPlayerId,
+               int16_t x, int16_t y, int16_t z,
+               uint8_t block_id)
+{
+    Player* p = g_playerManager->getPlayer(senderPlayerId);
+    if (!p) return;
+
+    if (x < 0 || x >= 256 ||
+        y < 0 || y >= 64  ||
+        z < 0 || z >= 256)
+    {
+        return;
+    }
+
+    sendBlock(senderPlayerId, x, y, z, block_id);
 }
+
 
 void recvPosOrt(uint8_t playerId,
                 int16_t x, int16_t y, int16_t z,
