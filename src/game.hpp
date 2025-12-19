@@ -14,4 +14,5 @@ void sendDespawnPlayer(uint8_t playerId);
 void recvBlock(uint8_t senderPlayerId, int16_t x, int16_t y, int16_t z, uint8_t block_id);
 void recvPosOrt(uint8_t playerId, int16_t x, int16_t y, int16_t z, uint8_t yaw, uint8_t pitch);
 void recvMessage(uint8_t senderPlayerId, std::string message);
+
 #endif
